@@ -1,4 +1,7 @@
 #We want to run this script daily with cron to check for updates
+
+#----------Define functions--------------
+
 #strip text string of surrounding spaces and replace commas and quotes to avoid errors in CSV files 
 def strip_replace(element,tag, selector):
     if(element.find(tag, selector)):
@@ -13,7 +16,7 @@ def listing2list(job_listing):
   salary_class = "layout display-18 pa-0 pa-0 wrap"
   subcat_class = "v-btn v-btn--contained v-btn--router theme--light v-size--default catBtn"
   profile_class = "no-underline-all"
-  company_name = job_description = job_requirements = profile_link = salary = job_title = "unknown"
+  company_name = job_description = job_requirements = profile_link = salary = job_title = "unknown" #initial values
   details_list = []  
 
   for detail in job_listing.find_all("span", {"class": "display-18"}):
@@ -41,6 +44,7 @@ def listing2list(job_listing):
     if("/jobs/subcat/" in link['href']): subcats = str(link['href'].split("/")[3]) + " " + subcats      
   return f"{category_id}, {listing_link}, {job_title}, {company_name}, {company_location},{profile_link},{experience_required}, {position_type}, {time_posted}, {job_description}, {job_requirements}, {salary}, {subcats}\n"
 
+#Load category page in the browser, measure time it took, print result
 def load_category_page(category):
     start = time.time()    
     category_id = int(category.split("/")[4][3:])
@@ -49,22 +53,23 @@ def load_category_page(category):
     end = time.time()
     print("Category " + str(category_id) + " loaded in {:0.2f}".format(end - start) + " seconds")    
    
-#When category page is loaded we can only see 25 first listings. We must click the "Show me more listings" button in order to load 10 more listings. We need to load all listings
+#When category page is loaded we can only see 25 first listings. We must click the "Show me more listings" button in order to load 10 more listings. 
+#We need to load all the listings
 def load_all_cat_listings(driver):    
   start = time.time() 
   try:
-        num_listings=driver.find_element(By.XPATH,'//h6').text.split(" ")[1]
+        num_listings=driver.find_element(By.XPATH,'//h6').text.split(" ")[1] #Getting number of listings in category from the page
   except:
         num_listings = "All"    
   while True:
     try:      
-      WebDriverWait(driver, 30).until(EC.visibility_of_element_located((By.XPATH, "//*[contains(text(), 'הצג לי משרות נוספות')]"))).click()
+      WebDriverWait(driver, 30).until(EC.visibility_of_element_located((By.XPATH, "//*[contains(text(), 'הצג לי משרות נוספות')]"))).click()#Clicking "Load more" button in loop
     except TimeoutException:
       break
   end = time.time()
   print(str(num_listings) + " listings loaded in {:0.2f}".format(end - start) + " seconds")
 
-#We have to expand listings in order to get all the data
+#Initially most of job description and requirements are not in the DOM. We have to expand listings in order to get all the data. 
 def expand_all_listings(driver):
   start = time.time()
   listing_expand_elements = driver.find_elements(By.XPATH, "//*[contains(text(), '+ לצפייה בפרטי המשרה')]")    
@@ -75,7 +80,9 @@ def expand_all_listings(driver):
       break
   end = time.time()    
   print("All listings clicked in {:0.2f}".format(end - start) + " seconds")
-   
+
+#The time of posting is listed in the following format: "Posted before X [minutes or hours]" or [dd/mm/Y] so we need to transform it to one format. 
+#Granularity of 1 day is good enough for our purposes
 def calculate_date(posting_time):
   x = datetime.now().astimezone()
   if ("/" in posting_time): return posting_time
@@ -84,7 +91,7 @@ def calculate_date(posting_time):
   if(int(x.hour)-hours_ago>=0): return datetime.today().astimezone().strftime("%d/%m/%Y")
   else: return (datetime.today() - timedelta(days=1)).astimezone().strftime("%d/%m/%Y")  
    
-#Headless Chromium. skipping images to save time and traffic
+#Headless Chromium. Skipping images to save time and traffic
 def driverWithOptions():  
   sys.path.insert(0,'/usr/lib/chromium-browser/chromedriver')
   options = webdriver.ChromeOptions()
@@ -103,8 +110,8 @@ def driverWithOptions():
 #python everyday.py -c 2 &
 #python everyday.py -c 3 &
 #wait
-#There are 32 categories and each batch contains 8 categories. Command line parameter is the batch number. By default (if no parameter is provided) all categories will be run in one thread.
-
+#There are 32 categories and each batch contains 8 categories. Command line parameter is the batch number. 
+#By default (if no parameter is provided) all categories will be run in one thread.
 
 def categories(batchNum):
     link_str = "https://www.drushim.co.il/jobs/cat"
