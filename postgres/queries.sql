@@ -64,3 +64,6 @@ GROUP BY "dimCompany".name
 ORDER BY job_count DESC
 LIMIT 5;
 
+-- Number of listings where Python is mentioned
+SELECT COUNT(*) FROM "listingFacts"
+WHERE  (description LIKE '%Python%') or (requirements LIKE '%Python%')
