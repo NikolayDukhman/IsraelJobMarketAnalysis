@@ -55,3 +55,12 @@ GROUP BY "dimLocation".name
 ORDER BY count DESC
 LIMIT 5;
 
+--Top 5 companies
+SELECT "dimCompany".name, COUNT(*) as job_count
+FROM "listingFacts"
+JOIN "dimCompany" ON "listingFacts".company_id = "dimCompany".company_id
+WHERE "dimCompany".name<>' None'
+GROUP BY "dimCompany".name
+ORDER BY job_count DESC
+LIMIT 5;
+
